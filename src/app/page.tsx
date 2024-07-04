@@ -1,113 +1,296 @@
-import Image from "next/image";
+'use client';
+import "./App.css";
+import Error from "@/components/Error/Error";
+import Menu from "@/components/Menu/Menu";
+import Balance from "@/components/Balance/Balance";
+import Pyramid from "@/components/Pyramid/Pyramid";
+import { useState, useEffect } from "react";
 
-export default function Home() {
+
+class Node {
+  constructor(data) {
+    this.data = data;
+    this.nextLeft = null;
+    this.nextRight = null;
+  }
+}
+
+class LinkedList {
+  constructor(head = null) {
+    this.head = head;
+  }
+}
+
+const Home = () => {
+  const [balance, setBalance] = useState(100);
+  const [autoBet, setAutoBet] = useState(false);
+  const [betAmount, setBetAmount] = useState(10);
+  const [risk, setRisk] = useState(1);
+  const [rows, setRows] = useState(8);
+  const [betPath, setBetPath] = useState([]);
+  const [betStarted, setBetStarted] = useState(false);
+  const [numOfAutoBets, setNumOfAutoBets] = useState(10);
+  const [error, setError] = useState(false);
+
+  let rowCount = 1;
+
+  // multipliers
+  const sixteenRowMultipliers = [
+    [16, 9, 2, 1.4, 1.4, 1.2, 1.1, 1, 0.5, 1, 1.1, 1.2, 1.4, 1.4, 2, 9, 16],
+    [110, 41, 10, 5, 3, 1.5, 1, 0.5, 0.3, 0.5, 1, 1.5, 3, 5, 10, 41, 110],
+    [1000, 130, 26, 9, 4, 2, 0.2, 0.2, 0.2, 0.2, 0.2, 2, 4, 9, 26, 130, 1000],
+  ];
+  const fifteenRowMultipliers = [
+    [15, 8, 3, 2, 1.5, 1.1, 1, 0.7, 0.7, 1, 1.1, 1.5, 2, 3, 8, 15],
+    [88, 18, 11, 5, 3, 1.3, 0.5, 0.3, 0.3, 0.5, 1.3, 3, 5, 11, 18, 88],
+    [620, 83, 27, 8, 3, 0.5, 0.2, 0.2, 0.2, 0.2, 0.5, 3, 8, 27, 83, 620],
+  ];
+  const fourteenRowMultipliers = [
+    [7.1, 4, 1.9, 1.4, 1.3, 1.1, 1, 0.5, 1, 1.1, 1.3, 1.4, 1.9, 4, 7.1],
+    [58, 15, 7, 4, 1.9, 1, 0.5, 0.2, 0.5, 1, 1.9, 4, 7, 15, 58],
+    [420, 56, 18, 5, 1.9, 0.3, 0.2, 0.2, 0.2, 0.3, 1.9, 5, 18, 56, 420],
+  ];
+  const thirteenRowMultipliers = [
+    [8.1, 4, 3, 1.9, 1.2, 0.9, 0.7, 0.7, 0.9, 1.2, 1.9, 3, 4, 8.1],
+    [43, 13, 6, 3, 1.3, 0.7, 0.4, 0.4, 0.7, 1.3, 3, 6, 13, 43],
+    [260, 37, 11, 4, 1, 0.2, 0.2, 0.2, 0.2, 1, 4, 11, 37, 260],
+  ];
+  const twelveRowMultipliers = [
+    [10, 3, 1.6, 1.4, 1.1, 1, 0.5, 1, 1.1, 1.4, 1.6, 3, 10],
+    [33, 11, 4, 2, 1.1, 0.6, 0.3, 0.6, 1.1, 2, 4, 11, 33],
+    [170, 24, 8.1, 2, 0.7, 0.2, 0.2, 0.2, 0.7, 2, 8.1, 24, 170],
+  ];
+  const elevenRowMultipliers = [
+    [8.4, 3, 1.9, 1.3, 1, 0.7, 0.7, 1, 1.3, 1.9, 3, 8.4],
+    [24, 6, 3, 1.8, 0.7, 0.5, 0.5, 0.7, 1.8, 3, 6, 24],
+    [120, 14, 5.2, 1.4, 0.4, 0.2, 0.2, 0.4, 1.4, 5.2, 14, 120],
+  ];
+  const tenRowMultipliers = [
+    [8.9, 3, 1.4, 1.1, 1, 0.5, 1, 1.1, 1.4, 3, 8.9],
+    [22, 5, 2, 1.4, 0.6, 0.4, 0.6, 1.4, 2, 5, 22],
+    [76, 10, 3, 0.9, 0.3, 0.2, 0.3, 0.9, 3, 10, 76],
+  ];
+  const nineRowMultipliers = [
+    [5.6, 2, 1.6, 1, 0.7, 0.7, 1, 1.6, 2, 5.6],
+    [18, 4, 1.7, 0.9, 0.5, 0.5, 0.9, 1.7, 4, 18],
+    [43, 7, 2, 0.6, 0.2, 0.2, 0.6, 2, 7, 43],
+  ];
+  const eightRowMultipliers = [
+    [5.6, 2.1, 1.1, 1, 0.5, 1, 1.1, 2.1, 5.6],
+    [13, 3, 1.3, 0.7, 0.4, 0.7, 1.3, 3, 13],
+    [29, 4, 1.5, 0.3, 0.2, 0.3, 1.5, 4, 29],
+  ];
+
+  const [multipliers, setMultipliers] = useState(twelveRowMultipliers);
+
+  useEffect(() => {
+    switch (rows) {
+      case 8:
+        setMultipliers(eightRowMultipliers);
+        break;
+      case 9:
+        setMultipliers(nineRowMultipliers);
+        break;
+      case 10:
+        setMultipliers(tenRowMultipliers);
+        break;
+      case 11:
+        setMultipliers(elevenRowMultipliers);
+        break;
+      case 12:
+        setMultipliers(twelveRowMultipliers);
+        break;
+      case 13:
+        setMultipliers(thirteenRowMultipliers);
+        break;
+      case 14:
+        setMultipliers(fourteenRowMultipliers);
+        break;
+      case 15:
+        setMultipliers(fifteenRowMultipliers);
+        break;
+      case 16:
+        setMultipliers(sixteenRowMultipliers);
+        break;
+      default:
+        break;
+    }
+  }, [rows]);
+
+  const mainNode = new Node(0);
+  const list = new LinkedList(mainNode);
+
+  let tempOldNodeArr = [mainNode];
+  let tempNewNodeArr = [];
+  let nodeArr = [];
+
+  let ctr = 1;
+
+  for (let i = 0; i < rows + 2; i++) {
+    for (let j = 0; j < rowCount + 1; j++) {
+      tempNewNodeArr.push(new Node(ctr));
+      ctr += 1;
+    }
+    for (let k = 0; k < rowCount; k++) {
+      tempOldNodeArr[k].nextLeft = tempNewNodeArr[k];
+      tempOldNodeArr[k].nextRight = tempNewNodeArr[k + 1];
+    }
+    nodeArr.push(tempOldNodeArr);
+    tempOldNodeArr = [...tempNewNodeArr];
+    tempNewNodeArr = [];
+    rowCount += 1;
+  }
+  tempOldNodeArr[0].data = null;
+  tempOldNodeArr[tempOldNodeArr.length - 1].data = null;
+  for (let i = 0; i + 1 < tempOldNodeArr.length - 1; i++) {
+    tempOldNodeArr[i + 1].data = multipliers[risk][i];
+  }
+  tempOldNodeArr.shift();
+  tempOldNodeArr.pop();
+
+  const handleBetAmount = (e) => {
+    setBetAmount(parseFloat(e.target.value));
+  };
+
+  const handleAutoBet = (e) => {
+    e.target.id === "auto" ? setAutoBet(true) : setAutoBet(false);
+  };
+
+  const handleRisk = (e) => {
+    switch (e.target.value) {
+      case "low":
+        setRisk(0);
+        break;
+      case "medium":
+        setRisk(1);
+        break;
+      case "high":
+        setRisk(2);
+        break;
+      default:
+        break;
+    }
+  };
+
+  // betting function
+  const randomTraverse = async () => {
+    if (!betStarted) {
+      let multiplier = 0;
+      if (betAmount > balance) {
+        // add popup here
+        console.log("cannot be");
+        setError(true);
+        await delay(2000);
+        setError(false);
+        return;
+      }
+      const headDup = list.head;
+      let path = [];
+      setBetStarted(true);
+      while (list.head) {
+        multiplier = list.head.data;
+        if (Math.random() > 0.5) {
+          list.head = list.head.nextLeft;
+          path.push(-1);
+        } else {
+          list.head = list.head.nextRight;
+          path.push(1);
+        }
+      }
+
+      path.pop();
+      setBetPath(path);
+
+      await delay(1200);
+      await setBalance(
+        (balance) => balance - betAmount + betAmount * multiplier
+      );
+      await setBetStarted(false);
+      list.head = headDup;
+    }
+  };
+
+  const delay = (ms) => {
+    return new Promise((resolve, reject) => setTimeout(resolve, ms));
+  };
+
+  const automatedTraverse = async () => {
+    if (betAmount * numOfAutoBets > balance) {
+      // add popup here
+      console.log("cannot be");
+      setError(true);
+      await delay(2000);
+      setError(false);
+      setBetStarted(false);
+      return;
+    }
+    setBetStarted(true);
+    for (let i = 0; i < numOfAutoBets; i++) {
+      randomTraverse();
+      await delay(1200);
+    }
+    setBetStarted(false);
+  };
+
+  const handleRows = (e) => {
+    setRows(Number(e.target.value));
+  };
+
+  const handleNumOfAutoBets = (e) => {
+    setNumOfAutoBets(e.target.value);
+  };
+
+  const handleBalance = (bal) => {
+    if (bal === "") {
+      setBalance(0);
+      return;
+    }
+    setBalance(parseFloat(bal));
+  };
+
+  const halfBet = () => {
+    setBetAmount(betAmount / 2);
+  };
+
+  const doubleBet = () => {
+    setBetAmount(betAmount * 2);
+  };
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
-
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
+    <div className='app'>
+      <div>
+        <Balance
+          handleBalance={handleBalance}
+          balance={balance}
+          betStarted={betStarted}
+        />
+        <Menu
+          handleAutoBet={handleAutoBet}
+          handleBetAmount={handleBetAmount}
+          autoBet={autoBet}
+          handleRisk={handleRisk}
+          handleRows={handleRows}
+          handleNumOfAutoBets={handleNumOfAutoBets}
+          halfBet={halfBet}
+          doubleBet={doubleBet}
+          betAmount={betAmount}
+          randomTraverse={randomTraverse}
+          automatedTraverse={automatedTraverse}
+          betStarted={betStarted}
         />
       </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
+      <Pyramid
+        path={betPath}
+        rows={rows}
+        nodeArr={nodeArr}
+        tempOldNodeArr={tempOldNodeArr}
+        betStarted={betStarted}
+      />
+      <div className='error-module'>
+        <Error error={error} />
       </div>
-    </main>
+    </div>
   );
-}
+};
+
+export default Home;
